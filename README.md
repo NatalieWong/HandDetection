@@ -1,33 +1,23 @@
-Real-Time Hand Gesture Detection
-================================
-Python library offering a class for hand detection mixing diverse methods using opencv and inspired on this sources:
-https://github.com/lzane/Fingers-Detection-using-OpenCV-and-Python/tree/py2_opencv2
-https://github.com/sashagaz/Hand_Detection
+# Auto CSV Generator for TensorFlow Object Detection model training
 
-The HandDetection class let the user get the hand detection from an image or the own class can get the camera capture
-task.
-Currently it only draw the points of the fingers on the original image.
+This program is specialized for generating a csv file which can be used for training a TensorFlow hand detection model.
 
-This project is written in Python 2.7. The following libraries are used in this project and neccessary to be add to your computer:
-1) Time - usually comes with Python 2.7
-2) OpenCV (2.4.9) - http://docs.opencv.org/trunk/doc/py_tutorials/py_setup/py_setup_in_windows/py_setup_in_windows.html
-3) NumPy (1.8.0rc1) - http://www.numpy.org
+This program detects hand using OpenCV in frames which are extracted from a video source. If a hand is detected in a frame, the frame will be saved in JPEG format under the image folder and the coordinates of the bounding box for the hand in the frame will be recorded. After the detection of hand in the video frames finished, a csv file will be generated.
 
-The library can be executed for it own test with:
-```python HandDetection.py```
+## Important Notice
+This program has been successfully run using python2.7.
 
-When running the python file, you can expect to see the real time frame from your camera with a bounding rectangular framing your hand. The bounding rectangular will contain yellow circles corresponding to the fingertips and finger webbing. The center mass of your hand will also appear in the bounding rectangular. A number on the upper left side of the frame corresponds to the number of pointed fingers.
+Please create an folder called `image` by yourself to hold all the JPEG images which are going to be saved during the execution of the program.
 
-To increase accuracy of the gesture recognition, it is recommended to run the code in a bright light room. Additionally, the code can analyze one hand (either left or right), and the hand needs to be in front of the camera.
+Currently only one label - hand is supported. See the line `rowdata = [filename, self.frameWidth, self.frameHeight, 'hand', xmin, ymin, xmax, ymax]`
 
-References:
+At present, as there are a number of hard-coded lines, please change the following lines in `HandDetection.py` to suit your purpose.
 
-https://github.com/lzane/Fingers-Detection-using-OpenCV-and-Python/tree/py2_opencv2
+- `hand_detector = HandDetector('resources/???.mp4')` to your video file in MP4 format
+- `self.cntImg = 1` to an integer that you want to start from for the generation of the saved image filename.
+- `self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]` is used for generating the csv header at the first time you run the program. After you have run the program once, use `self.csvholder = []` instead.
+- `with open('hand_train.csv', 'w') as file:` will create a csv file for the first time you run the program. If you want to append data to this file onwards, use `with open('hand_train.csv','a') as file:` instead.
 
-https://github.com/sashagaz/Hand_Detection
+You may discard a frame by pressing the `x` hotkey after you have activated any one of the debug window while the program is running.
 
-http://www.tmroyal.com/a-high-level-description-of-two-fingertip-tracking-techniques-k-curvature-and-convexity-defects.html
-
-http://fivedots.coe.psu.ac.th/~ad/jg/nui055/
-
-https://link.springer.com/article/10.1007/s10489-015-0680-z
+You may call `visualize_image_bbox.py` seperately to visualize the bounding box for each image saved under the image folder.

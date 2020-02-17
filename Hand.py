@@ -9,7 +9,7 @@ import cv2
 from roi import Roi, SIDE
 
 MAX_UNDETECTED_FRAMES = 30 * 10  # 30 FPS * 10 seconds
-MAX_UNDETECTED_SECONDS = 10
+MAX_UNDETECTED_SECONDS = 5
 DETECTION_TRUTH_FACTOR = 2.  # points of life to recover if detected in one iteration
 TRACKING_TRUTH_FACTOR = .1  # points of life to recover if tracked in one iteration
 UNDETECTION_TRUTH_FACTOR = 3.  # points of life to recover if detected in one iteration
@@ -49,31 +49,31 @@ def get_random_color(n=1):
         ret = [r, g, b]
     return ret
 
-def clean_mask_noise(mask, blur=5):
-    """
-    Given an image mask it perfoms a clean up of it with a series of erodes and dilate
+# def clean_mask_noise(mask, blur=5):
+#     """
+#     Given an image mask it perfoms a clean up of it with a series of erodes and dilate
 
-    :param mask: mask to be cleaned
-    :param blur: blur to be applied to the mask after clean up
-    :return: mask cleaned
-    """
-    # Kernel matrices for morphological transformation
-    kernel_square = np.ones((11, 11), np.uint8)
-    kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#     :param mask: mask to be cleaned
+#     :param blur: blur to be applied to the mask after clean up
+#     :return: mask cleaned
+#     """
+#     # Kernel matrices for morphological transformation
+#     kernel_square = np.ones((11, 11), np.uint8)
+#     kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
 
-    # Perform morphological transformations to filter out the background noise
-    # Dilation increase skin color area
-    # Erosion increase skin color area
-    dilation = cv2.dilate(mask, kernel_ellipse, iterations=1)
-    erosion = cv2.erode(dilation, kernel_square, iterations=1)
-    dilation2 = cv2.dilate(erosion, kernel_ellipse, iterations=1)
-    # filtered = cv2.medianBlur(dilation2, 5)
-    # kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
-    # dilation2 = cv2.dilate(filtered, kernel_ellipse, iterations=1)
-    # kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
-    # dilation3 = cv2.dilate(filtered, kernel_ellipse, iterations=1)
-    median = cv2.medianBlur(dilation2, blur)
-    return median
+#     # Perform morphological transformations to filter out the background noise
+#     # Dilation increase skin color area
+#     # Erosion increase skin color area
+#     dilation = cv2.dilate(mask, kernel_ellipse, iterations=1)
+#     erosion = cv2.erode(dilation, kernel_square, iterations=1)
+#     dilation2 = cv2.dilate(erosion, kernel_ellipse, iterations=1)
+#     # filtered = cv2.medianBlur(dilation2, 5)
+#     # kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (8, 8))
+#     # dilation2 = cv2.dilate(filtered, kernel_ellipse, iterations=1)
+#     # kernel_ellipse = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+#     # dilation3 = cv2.dilate(filtered, kernel_ellipse, iterations=1)
+#     median = cv2.medianBlur(dilation2, blur)
+#     return median
 
 def get_color_mask(image, color_from=[2, 50, 50], color_to=[15, 255, 255]):
     """
@@ -99,11 +99,12 @@ class Hand(object):
     This contains all the usefull information for a detected hand.
 
     """
-    def __init__(self):
+    def __init__(self, detector):
         """
         Hand class attributes values.
 
         """
+        self._detector = detector
         self._id = None
         self._fingertips = []
         self._intertips = []
@@ -131,7 +132,7 @@ class Hand(object):
         # Region extended from tracking_roi to a maximum of initial_roi to look for the hand
         self._extended_roi = Roi()
 
-        self._mask_mode = MASKMODES.DEPTH
+        self._mask_mode = MASKMODES.COLOR
         self._debug = True
         self._depth_threshold = -1
         self._last_frame = None
@@ -148,8 +149,7 @@ class Hand(object):
 
     @initial_roi.setter
     def initial_roi(self, value):
-        assert all(isinstance(n, (int, float)) for n in value) or isinstance(value,
-                                                                             Roi), "initial_roi must be of the type Roi"
+        # assert all(isinstance(n, (int, float)) for n in value) or isinstance(value, Roi), "initial_roi must be of the type Roi"
         if isinstance(value, Roi):
             self._initial_roi = value
         else:
@@ -178,8 +178,7 @@ class Hand(object):
 
     @detection_roi.setter
     def detection_roi(self, value):
-        assert all(isinstance(n, (int, float)) for n in value) or isinstance(value,
-                                                                             Roi), "detection_roi must be of the type Roi"
+        assert all(isinstance(n, (int, float)) for n in value) or isinstance(value, Roi), "detection_roi must be of the type Roi"
         if isinstance(value, Roi):
             self._detection_roi = value
         else:
@@ -193,8 +192,7 @@ class Hand(object):
 
     @extended_roi.setter
     def extended_roi(self, value):
-        assert all(isinstance(n, (int, float)) for n in value) or isinstance(value,
-                                                                             Roi), "extended_roi must be of the type Roi"
+        assert all(isinstance(n, (int, float)) for n in value) or isinstance(value, Roi), "extended_roi must be of the type Roi"
         if isinstance(value, Roi):
             self._extended_roi = value
         else:
@@ -247,117 +245,117 @@ class Hand(object):
 #####################################################################
 
     #TODO: Check if we need a deep copy of the data.
-    def update_attributes_from_detected(self, other_hand):
-        """
-        update current hand with the values of other hand
-        TODO: need to be checked.
-        :param other_hand: the hand where the values are going to be copied
-        :return: None
-        """
-        self._fingertips = other_hand.fingertips
-        self._intertips = other_hand.intertips
-        self._center_of_mass = other_hand.center_of_mass
-        self._finger_distances = other_hand.finger_distances
-        self._average_defect_distance = other_hand.average_defect_distance
-        self._contour = other_hand.contour
-        self.detection_roi = other_hand.detection_roi
-        self._detected = True
+    # def update_attributes_from_detected(self, other_hand):
+    #     """
+    #     update current hand with the values of other hand
+    #     TODO: need to be checked.
+    #     :param other_hand: the hand where the values are going to be copied
+    #     :return: None
+    #     """
+    #     self._fingertips = other_hand._fingertips
+    #     self._intertips = other_hand._intertips
+    #     self._center_of_mass = other_hand._center_of_mass
+    #     self._finger_distances = other_hand._finger_distances
+    #     self._average_defect_distance = other_hand._average_defect_distance
+    #     self._contour = other_hand._contour
+    #     self.detection_roi = other_hand._detection_roi
+    #     self._detected = True
 
-    def update_truth_value_by_time(self):
-        """
-        Update the truth value of the hand based on the time elapsed between two calls
-        and if the hand is detected and tracked
+    # def update_truth_value_by_time(self):
+    #     """
+    #     Update the truth value of the hand based on the time elapsed between two calls
+    #     and if the hand is detected and tracked
 
-        :return: None
-        """
-        if self.last_time_update is not None:
-            elapsed_time = datetime.now() - self.last_time_update
-            elapsed_miliseconds = int(elapsed_time.total_seconds() * 1000)
+    #     :return: None
+    #     """
+    #     if self.last_time_update is not None:
+    #         elapsed_time = datetime.now() - self.last_time_update
+    #         elapsed_miliseconds = int(elapsed_time.total_seconds() * 1000)
 
-            # Calculate how much we would substract if the hand is undetected
-            truth_subtraction = elapsed_miliseconds * MAX_TRUTH_VALUE / MAX_UNDETECTED_SECONDS * 1000
+    #         # Calculate how much we would substract if the hand is undetected
+    #         truth_subtraction = elapsed_miliseconds * MAX_TRUTH_VALUE / MAX_UNDETECTED_SECONDS * 1000
 
-            # Calculate how much we should increment if the hand has been detected
-            detection_adition = DETECTION_TRUTH_FACTOR if self._detected is True else 0
+    #         # Calculate how much we should increment if the hand has been detected
+    #         detection_adition = DETECTION_TRUTH_FACTOR if self._detected is True else 0
 
-            # Calculate how much we should increment if the is tracked
-            tracking_adition = TRACKING_TRUTH_FACTOR if self._tracked is True else 0
+    #         # Calculate how much we should increment if the is tracked
+    #         tracking_adition = TRACKING_TRUTH_FACTOR if self._tracked is True else 0
 
-            # update of the truth value
-            self._confidence = self._confidence - truth_subtraction + detection_adition + tracking_adition
-        self.last_time_update = datetime.now()
+    #         # update of the truth value
+    #         self._confidence = self._confidence - truth_subtraction + detection_adition + tracking_adition
+    #     self.last_time_update = datetime.now()
 
 
     # Deprecated: using update_truth_value_by_frame2
-    def update_truth_value_by_frame(self):
-        """
-        Update the truth value of the hand based on the frames elapsed between two calls
-        and if the hand is detected and tracked
+    # def update_truth_value_by_frame(self):
+    #     """
+    #     Update the truth value of the hand based on the frames elapsed between two calls
+    #     and if the hand is detected and tracked
 
-        :return: None
-        """
-        one_frame_truth_subtraction = MAX_TRUTH_VALUE / MAX_UNDETECTED_FRAMES
-        detection_adition = 0
-        if self._detected:
-            detection_adition = DETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
-        else:
-            self._consecutive_detection_fails += 1
-            detection_adition = -1 * UNDETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
-        tracking_adition = 0
-        if self._tracked:
-            tracking_adition = TRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
-        else:
-            self._consecutive_tracking_fails += 1
-            tracking_adition = -1 * UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
-        new_truth_value = self._confidence - one_frame_truth_subtraction + detection_adition + tracking_adition
-        if new_truth_value <= MAX_TRUTH_VALUE:
-            self._confidence = new_truth_value
-        else:
-            self._confidence = MAX_TRUTH_VALUE
-        self._frame_count += 1
+    #     :return: None
+    #     """
+    #     one_frame_truth_subtraction = MAX_TRUTH_VALUE / MAX_UNDETECTED_FRAMES
+    #     detection_adition = 0
+    #     if self._detected:
+    #         detection_adition = DETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
+    #     else:
+    #         self._consecutive_detection_fails += 1
+    #         detection_adition = -1 * UNDETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
+    #     tracking_adition = 0
+    #     if self._tracked:
+    #         tracking_adition = TRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
+    #     else:
+    #         self._consecutive_tracking_fails += 1
+    #         tracking_adition = -1 * UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
+    #     new_truth_value = self._confidence - one_frame_truth_subtraction + detection_adition + tracking_adition
+    #     if new_truth_value <= MAX_TRUTH_VALUE:
+    #         self._confidence = new_truth_value
+    #     else:
+    #         self._confidence = MAX_TRUTH_VALUE
+    #     self._frame_count += 1
 
-    def update_truth_value_by_frame2(self):
-        substraction = 0
-        one_frame_truth_subtraction = MAX_TRUTH_VALUE / MAX_UNDETECTED_FRAMES
-        if not self._detected:
-            self._consecutive_detection_fails += 1
-        if not self._tracked:
-            self._consecutive_tracking_fails += 1
-        if not self._detected and not self._tracked:
-            substraction = -1 * UNDETECTION_TRUTH_FACTOR * UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
-        else:
-            if self._tracked:
-                substraction = substraction + UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
-            if self._detected:
-                substraction = substraction + UNDETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
+    # def update_truth_value_by_frame2(self):
+    #     substraction = 0
+    #     one_frame_truth_subtraction = MAX_TRUTH_VALUE / MAX_UNDETECTED_FRAMES
+    #     if not self._detected:
+    #         self._consecutive_detection_fails += 1
+    #     if not self._tracked:
+    #         self._consecutive_tracking_fails += 1
+    #     if not self._detected and not self._tracked:
+    #         substraction = -1 * UNDETECTION_TRUTH_FACTOR * UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
+    #     else:
+    #         if self._tracked:
+    #             substraction = substraction + UNTRACKING_TRUTH_FACTOR * one_frame_truth_subtraction
+    #         if self._detected:
+    #             substraction = substraction + UNDETECTION_TRUTH_FACTOR * one_frame_truth_subtraction
 
-        new_truth_value = self._confidence + substraction
-        if new_truth_value <= 100:
-            self._confidence = new_truth_value
-        else:
-            self._confidence = 100
-        self._frame_count += 1
+    #     new_truth_value = self._confidence + substraction
+    #     if new_truth_value <= 100:
+    #         self._confidence = new_truth_value
+    #     else:
+    #         self._confidence = 100
+    #     self._frame_count += 1
 
 
-    def copy_main_attributes(self):
-        """
-        Return a new hand with the main attributes of this copied into it
+    # def copy_main_attributes(self):
+    #     """
+    #     Return a new hand with the main attributes of this copied into it
 
-        :return: New Hand with the main attributes copied into it
-        """
-        updated_hand = Hand()
-        updated_hand._id = self._id
-        updated_hand._fingertips = []
-        updated_hand._intertips = []
-        updated_hand._center_of_mass = None
-        updated_hand._finger_distances = []
-        updated_hand._average_defect_distance = []
-        updated_hand._contour = None
-        updated_hand.detection_roi = self.detection_roi
-        updated_hand._consecutive_tracking_fails = self._consecutive_tracking_fails
-        updated_hand._position_history = self._position_history
-        updated_hand._color = self._color
-        return updated_hand
+    #     :return: New Hand with the main attributes copied into it
+    #     """
+    #     updated_hand = Hand()
+    #     updated_hand._id = self._id
+    #     updated_hand._fingertips = []
+    #     updated_hand._intertips = []
+    #     updated_hand._center_of_mass = None
+    #     updated_hand._finger_distances = []
+    #     updated_hand._average_defect_distance = []
+    #     updated_hand._contour = None
+    #     updated_hand.detection_roi = self.detection_roi
+    #     updated_hand._consecutive_tracking_fails = self._consecutive_tracking_fails
+    #     updated_hand._position_history = self._position_history
+    #     updated_hand._color = self._color
+    #     return updated_hand
 
 #####################################################################
 ##########    Currently used methods                       ##########
@@ -376,7 +374,7 @@ class Hand(object):
 
         roied_hands_mask = roi.apply_to_frame_as_mask(hands_mask)
         if self._debug:
-            cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (Frame Mask)", hands_mask)
+            # cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (Frame Mask)", hands_mask)
             # to_show = cv2.resize(hands_mask, None, fx=.3, fy=.3, interpolation=cv2.INTER_CUBIC)
             to_show = roied_hands_mask.copy()
             # cv2.putText(to_show, (str(w)), (x + w, y), FONT, 0.3, [255, 255, 255], 1)
@@ -384,13 +382,13 @@ class Hand(object):
             # cv2.putText(to_show, (str(w * h)), (x + w / 2, y + h / 2), FONT, 0.3, [100, 100, 255], 1)
             # cv2.putText(to_show, (str(x)+", "+str(y)), (x-10, y-10), FONT, 0.3, [255, 255, 255], 1)
             to_show = roi.draw_on_frame(to_show)
-            cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (current_roi_mask)", roi.extract_from_frame(frame))
-            cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (ROIed Mask)", to_show)
+            # cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (current_roi_mask)", roi.extract_from_frame(frame))
+            # cv2.imshow("DEBUG: HandDetection_lib: create_contours_and_mask (ROIed Mask)", to_show)
 
         ret, thresh = cv2.threshold(roied_hands_mask, 127, 255, 0)
 
         # Find contours of the filtered frame
-        _, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return (contours, hands_mask)
 
 
@@ -402,32 +400,32 @@ class Hand(object):
         if mode == MASKMODES.COLOR:
             mask = get_color_mask(image)
         elif mode == MASKMODES.MOG2:
-            mask = self.get_MOG2_mask(image)
+            mask = self._detector.get_MOG2_mask(image)
         elif mode == MASKMODES.DIFF:
-            mask = self.get_simple_diff_mask2(image)
+            mask = self._detector.get_simple_diff_mask2(image)
         elif mode == MASKMODES.MIXED:
-            diff_mask = self.get_simple_diff_mask(image)
+            diff_mask = self._detector.get_simple_diff_mask(image)
 
             color_mask = get_color_mask(image)
             color_mask = clean_mask_noise(color_mask)
 
             if diff_mask is not None and color_mask is not None:
                 mask = cv2.bitwise_and(diff_mask, color_mask)
-                if self._debug:
-                    cv2.imshow("DEBUG: HandDetection_lib: diff_mask", diff_mask)
-                    cv2.imshow("DEBUG: HandDetection_lib: color_mask", color_mask)
+                # if self._debug:
+                    # cv2.imshow("DEBUG: HandDetection_lib: diff_mask", diff_mask)
+                    # cv2.imshow("DEBUG: HandDetection_lib: color_mask", color_mask)
         elif mode ==  MASKMODES.MOVEMENT_BUFFER:
             # Absolutly unusefull
-            mask = self.get_movement_buffer_mask(image)
+            mask = self._detector.get_movement_buffer_mask(image)
         elif mode == MASKMODES.DEPTH:
             if self._debug:
                 print("Mode depth")
-            assert self._depth_threshold != -1, "Depth threshold must be set with set_depth_mask method. Use this method only with RGBD cameras"
+            assert self.depth_threshold != -1, "Depth threshold must be set with set_depth_mask method. Use this method only with RGBD cameras"
             assert len(image.shape) == 2 or image.shape[2] == 1, "Depth image should have only one channel and it have %d" % image.shape[2]
             #TODO: ENV_DEPENDENCE: the second value depends on the distance from the camera to the maximum depth where it can be found in a scale of 0-255
 
             mask = image
-            mask[mask>self._depth_threshold]= 0
+            mask[mask>self.depth_threshold]= 0
             mask = self.depth_mask_to_image(mask)
 
             # Kernel matrices for morphological transformation
@@ -460,20 +458,19 @@ class Hand(object):
         hand_bounding_rect = cv2.boundingRect(new_hand_contour)
         return hand_bounding_rect, ((int(x), int(y)), radius), new_hand_contour
 
-    def get_hand_bounding_rect_from_rect(self, hand_contour, bounding_rect):
-        hand_contour = extract_contour_inside_rect(hand_contour, bounding_rect)
-        hand_bounding_rect = cv2.boundingRect(hand_contour)
-        return hand_bounding_rect, hand_contour
+    # def get_hand_bounding_rect_from_rect(self, hand_contour, bounding_rect):
+    #     hand_contour = extract_contour_inside_rect(hand_contour, bounding_rect)
+    #     hand_bounding_rect = cv2.boundingRect(hand_contour)
+    #     return hand_bounding_rect, hand_contour
 
-    def get_hand_bounding_rect_from_center_of_mass(self, hand_contour, center_of_mass, average_distance):
-        (x, y) = center_of_mass
-        radius = average_distance
-        center = (int(x), int(y))
-        radius = int(radius) + 10
-        hand_contour = extract_contour_inside_circle(hand_contour, (center, radius))
-        hand_bounding_rect = cv2.boundingRect(hand_contour)
-        return hand_bounding_rect, ((int(x), int(y)), radius), hand_contour
-
+    # def get_hand_bounding_rect_from_center_of_mass(self, hand_contour, center_of_mass, average_distance):
+    #     (x, y) = center_of_mass
+    #     radius = average_distance
+    #     center = (int(x), int(y))
+    #     radius = int(radius) + 10
+    #     hand_contour = extract_contour_inside_circle(hand_contour, (center, radius))
+    #     hand_bounding_rect = cv2.boundingRect(hand_contour)
+    #     return hand_bounding_rect, ((int(x), int(y)), radius), hand_contour
 
 
     # TODO: Move to Utils file
@@ -527,8 +524,8 @@ class Hand(object):
 
 
     def calculate_max_contour(self, image, to_binary=True):
-        if self._debug:
-            cv2.imshow("Hand: calculate_max_contour, image", image)
+        # if self._debug:
+            # cv2.imshow("Hand: calculate_max_contour, image", image)
         bounding_rect = None
         image_roi = None
         if to_binary:
@@ -554,13 +551,13 @@ class Hand(object):
         # if self._debug:
         #     cv2.imshow("Hand: calculate_max_contour, median", median)
         ret, thresh = cv2.threshold(mask, 127, 255, 0)
-        if self._debug:
-            cv2.imshow("Hand: calculate_max_contour, thresh", thresh)
+        # if self._debug:
+            # cv2.imshow("Hand: calculate_max_contour, thresh", thresh)
         cnts = None
         max_area = 100
         ci = 0
         # Find contours of the filtered frame
-        _, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         if contours:
             for i in range(len(contours)):
                 cnt = contours[i]
@@ -573,7 +570,6 @@ class Hand(object):
             x, y, w, h = bounding_rect
             image_roi = mask[y:y + h, x:x + w]
         return cnts, bounding_rect, image_roi
-
 
 
     def update_hand_with_contour(self, hand_contour):
@@ -765,42 +761,43 @@ class Hand(object):
             return 5 >= len(fingertips) > 2
 
 
-    def detect_and_track(self, frame):
-        """
-        Try to detect and track the hand on the given frame
+    # def detect_and_track(self, frame):
+    #     """
+    #     Try to detect and track the hand on the given frame
 
-        If the hand is not detected the extended_roi is updated which will be used in the next detection
-        :param frame:
-        :return:
-        """
-        self._detect_in_frame(frame)
-        if self._detected:
-            self._consecutive_detection_fails = 0
-        else:
-            self._consecutive_detection_fails += 1
+    #     If the hand is not detected the extended_roi is updated which will be used in the next detection
+    #     :param frame:
+    #     :return:
+    #     """
+    #     self._detect_in_frame(frame)
+    #     if self._detected:
+    #         self._consecutive_detection_fails = 0
+    #     else:
+    #         self._consecutive_detection_fails += 1
 
-        self._track_in_frame(frame)
-        print(self._detected, self._tracked)
+    #     self._track_in_frame(frame)
+    #     print(self._detected, self._tracked)
 
-        # if it's the first time we don't detect in a row...
-        if self._consecutive_detection_fails == 1:
-            # if we have a tracking roi we use it
-            if self._tracked:
-                self.extended_roi = self.tracking_roi
-            else:
-                # if we don't, we use the last detected roi
-                self.extended_roi = self.detection_roi
-        elif self._consecutive_detection_fails > 1:
-            # if it's not the first time we don't detect we just extend the extended roi.
-            # it's autolimited to the initial Roi
-            self.extended_roi = self.extended_roi.upscaled(self.initial_roi, 10)
+    #     # if it's the first time we don't detect in a row...
+    #     if self._consecutive_detection_fails == 1:
+    #         # if we have a tracking roi we use it
+    #         if self._tracked:
+    #             self.extended_roi = self.tracking_roi
+    #         else:
+    #             # if we don't, we use the last detected roi
+    #             self.extended_roi = self.detection_roi
+    #     elif self._consecutive_detection_fails > 1:
+    #         # if it's not the first time we don't detect we just extend the extended roi.
+    #         # it's autolimited to the initial Roi
+    #         self.extended_roi = self.extended_roi.upscaled(self.initial_roi, 10)
 
-        if self._tracked:
-            self._consecutive_tracking_fails = 0
-        else:
-            self._consecutive_tracking_fails += 1
+    #     if self._tracked:
+    #         self._consecutive_tracking_fails = 0
+    #     else:
+    #         self._consecutive_tracking_fails += 1
 
         # self._update_truth_value_by_frame2()
+
 
     def get_roi_to_use(self, frame):
         """
@@ -829,13 +826,28 @@ class Hand(object):
         assert current_roi != Roi(), "hand can't be detected on a %s roi of the frame" % str(current_roi)
         return current_roi
 
+
     def _track_in_frame(self, frame, method="camshift"):
         self._last_frame = frame
+
+        # for hand coor in frame to csv
+        xmin = None
+        ymin = None
+        xmax = None
+        ymax = None
+
         if self._ever_detected:
             roi_for_tracking = self.get_roi_to_use(frame)
 
             mask = self.create_hand_mask(frame)
             x, y, w, h = roi_for_tracking
+
+            # for hand coor in frame to csv
+            xmin = x
+            ymin = y
+            xmax = x + w
+            ymax = y + h
+
             track_window = tuple(roi_for_tracking)
             # set up the ROI for tracking
             roi = roi_for_tracking.extract_from_frame(frame)
@@ -855,8 +867,8 @@ class Hand(object):
                 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             # mask = cv2.inRange(hsv_roi, np.array((0., 60., 32.)), np.array((180., 255., 255.)))
             roi_mask = mask[y:y + h, x:x + w]
-            if self._debug:
-                cv2.imshow("DEBUG: HandDetection_lib: follow (ROI extracted mask)", roi_mask)
+            # if self._debug:
+                # cv2.imshow("DEBUG: HandDetection_lib: follow (ROI extracted mask)", roi_mask)
             roi_hist = cv2.calcHist([hsv_roi], [0], roi_mask, [180], [0, 180])
             cv2.normalize(roi_hist, roi_hist, 0, 255, cv2.NORM_MINMAX)
             # Setup the termination criteria, either 10 iteration or move by atleast 1 pt
@@ -879,7 +891,9 @@ class Hand(object):
                 self.tracking_roi = Roi(new_track_window)
         else:
             self._tracked = False
-
+        
+        # for hand coor in frame to csv
+        return xmin, ymin, xmax, ymax
 
 
 # TODO: move to a utils file
@@ -899,22 +913,22 @@ def extract_contour_inside_circle(full_contour, circle):
     return np.array(new_contour)
 
 # TODO: move to a utils file
-def extract_contour_inside_rect(full_contour, rect):
-    """
-    Get the intersection of a contour and a rectangle
+# def extract_contour_inside_rect(full_contour, rect):
+#     """
+#     Get the intersection of a contour and a rectangle
 
-    :param full_contour:  Contour to be intersected
-    :param rect: rectangle to be intersected with the contour
-    :return: ontour that is inside the given rectangle
-    """
-    x1, y1, w, h = rect
-    x2 = x1 + w
-    y2 = y1 + h
-    new_contour = []
-    for point in full_contour:
-        if x1 < point[0][0] < x2 and y1 < point[0][1] < y2:
-            new_contour.append(point)
-    return np.array(new_contour)
+#     :param full_contour:  Contour to be intersected
+#     :param rect: rectangle to be intersected with the contour
+#     :return: ontour that is inside the given rectangle
+#     """
+#     x1, y1, w, h = rect
+#     x2 = x1 + w
+#     y2 = y1 + h
+#     new_contour = []
+#     for point in full_contour:
+#         if x1 < point[0][0] < x2 and y1 < point[0][1] < y2:
+#             new_contour.append(point)
+#     return np.array(new_contour)
 
 if __name__ == '__main__':
     hand = Hand()
