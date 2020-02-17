@@ -7,7 +7,9 @@ This program detects hand using OpenCV in frames which are extracted from a vide
 ## Important Notice
 This program has been successfully run using python2.7.
 
-Please create an folder called `image` by yourself to hold all the JPEG images which are going to be saved during the execution of the program.
+Remember to `pip install cv2 numpy csv pandas` to get all the dependencies ready before the execution of the program.
+
+Please create a folder called `image` by yourself to hold all the JPEG images which are going to be saved during the execution of the program.
 
 Currently only one label - hand is supported. See the line `rowdata = [filename, self.frameWidth, self.frameHeight, 'hand', xmin, ymin, xmax, ymax]`
 
