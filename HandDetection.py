@@ -59,11 +59,11 @@ class HandDetector:
         self.depth_threshold = -1
 
         # for hand coor in frame to csv
-        self.cntImg = 1
+        self.cntImg = 205
         self.frameWidth = None
         self.frameHeight = None
-        # self.csvholder = []
-        self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]
+        self.csvholder = []
+        # self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]
 
         # Decrease frame size
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
@@ -191,8 +191,8 @@ class HandDetector:
 
     def generate_csv(self):
         # write csv file
-        with open('hand_train.csv', 'w') as file:
-        # with open('hand_train.csv','a') as file:
+        # with open('hand_train.csv', 'w') as file:
+        with open('hand_train.csv','a') as file:
             writer = csv.writer(file)
             for i in range(len(self.csvholder)):
                 writer.writerow(self.csvholder[i])
