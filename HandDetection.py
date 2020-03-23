@@ -11,6 +11,7 @@ import numpy as np
 
 import csv
 import time
+import matplotlib.pyplot as plt
 
 
 def calculate_angle(v1, v2):
@@ -59,11 +60,11 @@ class HandDetector:
         self.depth_threshold = -1
 
         # for hand coor in frame to csv
-        self.cntImg = 205
+        self.cntImg = 1922
         self.frameWidth = None
         self.frameHeight = None
-        self.csvholder = []
-        # self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]
+        self.csvholder = [] # for second or later execution
+        # self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']] # for first execution
 
         # Decrease frame size
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
@@ -168,12 +169,17 @@ class HandDetector:
         print(xmin, ymin, xmax, ymax)
 
         # discard inappropriate frame
-        if cv2.waitKey(2000) & 0xFF == ord('x'):
+        if cv2.waitKey(8000) & 0xFF == ord('x'):
             return
-        else:
+        elif cv2.waitKey(8000) & 0xFF == ord('s'): # need to press s key twice
             # save images in JPEG format
-            print "saved img-"+str(self.cntImg)
-            filename = 'hand_train_img_'+str(self.cntImg)+'.jpg'
+            print "saved hand_img_"+str(self.cntImg)
+            filename = 'hand_img_'+str(self.cntImg)+'.jpg'
+
+            # perform normalisation, use matplotlib
+            # frame = ((frame/255) * 0.5) * 2
+            # plt.imsave('image/'+filename, frame)
+
             cv2.imwrite('image/'+filename, frame)
             self.cntImg += 1
 
@@ -187,12 +193,14 @@ class HandDetector:
             # append data for csv
             rowdata = [filename, self.frameWidth, self.frameHeight, 'hand', xmin, ymin, xmax, ymax]
             self.csvholder.append(rowdata)
+        else:
+            print "No key press is detected"
 
 
     def generate_csv(self):
         # write csv file
-        # with open('hand_train.csv', 'w') as file:
-        with open('hand_train.csv','a') as file:
+        # with open('hand_label.csv', 'w') as file:
+        with open('hand_label.csv','a') as file:
             writer = csv.writer(file)
             for i in range(len(self.csvholder)):
                 writer.writerow(self.csvholder[i])
@@ -700,7 +708,7 @@ class HandDetector:
 
 def main():
     # hand_detector = HandDetector()
-    hand_detector = HandDetector('resources/hand-train-keyboard.mp4')
+    hand_detector = HandDetector('resources/?.mp4')
     hand_detector.debug = False
 
     hand_detector.capture_and_compute2()

@@ -2,3 +2,6 @@
 *.csv
 image
 resources
+hand_train
+hand_test
+image-check
