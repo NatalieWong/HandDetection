@@ -60,6 +60,7 @@ class HandDetector:
         self.depth_threshold = -1
 
         # for hand coor in frame to csv
+        self.image_dir = "image/"
         self.cntImg = 1922
         self.frameWidth = None
         self.frameHeight = None
@@ -178,13 +179,13 @@ class HandDetector:
 
             # perform normalisation, use matplotlib
             # frame = ((frame/255) * 0.5) * 2
-            # plt.imsave('image/'+filename, frame)
+            # plt.imsave(image_dir+filename, frame)
 
-            cv2.imwrite('image/'+filename, frame)
+            cv2.imwrite(image_dir+filename, frame)
             self.cntImg += 1
 
             # visualize hand bounding box
-            # img = cv2.imread('image/'+filename)
+            # img = cv2.imread(image_dir+filename)
             # cv2.rectangle(img, (xmin, ymax), (xmax, ymin), (0, 255, 0), 1)
             # cv2.imshow('Verifying annotation of '+filename, img)
             # cv2.waitKey(2000)
@@ -254,6 +255,10 @@ class HandDetector:
             self.frameWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             self.frameHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
             print(self.frameWidth, self.frameHeight)
+
+            # create a folder to hold all the frames to be saved
+            if not os.path.exists(image_dir):
+                os.mkdir(image_dir)
 
             while self.capture.isOpened():
 
