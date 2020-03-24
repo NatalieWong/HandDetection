@@ -6,7 +6,7 @@ Run `python HandDetection.py` to execute the program.
 
 This program detects hand in frames from a video source using OpenCV. If a hand is detected in a frame, the frame can be saved in JPEG format under the `image` directory and the coordinates of the bounding box for the hand in the frame will be recorded. After the detection of hand in the video frames finished, a csv file `hand_label.csv` will be generated.
 
-Run `split_train_test_csv_images.py` afterwards.
+Run `python split_train_test_csv_images.py` afterwards.
 
 This program splits the images in the `image` directory and corresponding image data in the `hand_label.csv` csv file into 2 separated directories. By default a dataset directory called `hand_my_dataset` will be created. Under this dataset directory, there are two subdirectories. `hand_train` is intended to be used for training while `hand_test` is intended to be used for testing during the hand detection model training process.
 
@@ -23,7 +23,7 @@ Remember to `pip install cv2 numpy csv pandas scikit-learn` to get all the depen
 Currently only one label - `hand` is supported. See the line `rowdata = [filename, final_w, final_h, 'hand', xmin, ymin, xmax, ymax]`
 
 ### Limitations
-At present, only **one** hand can be detected per frame in the video source.
+At present, only **ONE** hand can be detected per frame.
 
 The bounding box indicating the position of the hand cannot perfectly fit in the size of the hand.
 
