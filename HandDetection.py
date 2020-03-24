@@ -60,12 +60,18 @@ class HandDetector:
         self.depth_threshold = -1
 
         # for hand coor in frame to csv
-        self.image_dir = "image/"
-        self.cntImg = 1922
+        self.image_dir = "hand_images_test"
+        self.img_cnt = 0
+        self.desiredFrameWidth = 1280
+        self.desiredFrameHeight = 720
         self.frameWidth = None
         self.frameHeight = None
-        self.csvholder = [] # for second or later execution
-        # self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']] # for first execution
+        self.ratio_w = None
+        self.ratio_h = None
+        self.needToResize = False
+
+        self.firstRun = True
+        self.csvFilename = "hand_labels_test.csv"
 
         # Decrease frame size
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
@@ -167,44 +173,71 @@ class HandDetector:
 
     # for hand coor in frame to csv
     def save_frame(self, frame, xmin, ymin, xmax, ymax):
-        print(xmin, ymin, xmax, ymax)
+        print "original bbox:", (xmin, ymin, xmax, ymax)
 
         # discard inappropriate frame
         if cv2.waitKey(8000) & 0xFF == ord('x'):
             return
         elif cv2.waitKey(8000) & 0xFF == ord('s'): # need to press s key twice
-            # save images in JPEG format
-            print "saved hand_img_"+str(self.cntImg)
-            filename = 'hand_img_'+str(self.cntImg)+'.jpg'
+            # save frame in JPEG format
+            filename = 'hand_img_'+str(self.img_cnt)+'.jpg'
+
+            final_w = self.frameWidth
+            final_h = self.frameHeight
 
             # perform normalisation, use matplotlib
             # frame = ((frame/255) * 0.5) * 2
-            # plt.imsave(image_dir+filename, frame)
+            # plt.imsave(os.path.join(image_dir, filename), frame)
 
-            cv2.imwrite(image_dir+filename, frame)
-            self.cntImg += 1
+            if needToResize:
+                # resize the frame
+                frame = cv2.resize(frame, (0,0), fx=ratio_w, fy=ratio_h)
+                # frame = resized_frame # in case the above code isn't working
+
+                xmin = xmin * ratio_w
+                ymin = ymin * ratio_h
+                xmax = xmax * ratio_w
+                ymax = ymax * ratio_h
+
+                # adjust the frame size
+                final_w = frame.shape[1]
+                final_h = frame.shape[0]
+
+                print "resized frame size:", (final_w, final_h), ", bbox:", (xmin, ymin, xmax, ymax)
+
+            cv2.imwrite(os.path.join(image_dir, filename), frame)
+            print "saved hand_img_"+str(self.img_cnt)
 
             # visualize hand bounding box
-            # img = cv2.imread(image_dir+filename)
-            # cv2.rectangle(img, (xmin, ymax), (xmax, ymin), (0, 255, 0), 1)
-            # cv2.imshow('Verifying annotation of '+filename, img)
-            # cv2.waitKey(2000)
-            # cv2.destroyWindow('Verifying annotation of '+filename)
+            img = cv2.imread(os.path.join(image_dir, filename))
+            cv2.rectangle(img, (xmin, ymax), (xmax, ymin), (0, 255, 0), 1)
+            cv2.imshow('Verifying annotation of '+filename, img)
+            cv2.waitKey(2000)
+            cv2.destroyWindow('Verifying annotation of '+filename)
 
             # append data for csv
-            rowdata = [filename, self.frameWidth, self.frameHeight, 'hand', xmin, ymin, xmax, ymax]
+            rowdata = [filename, final_w, final_h, 'hand', xmin, ymin, xmax, ymax]
             self.csvholder.append(rowdata)
+
+            self.img_cnt += 1
         else:
             print "No key press is detected"
 
 
     def generate_csv(self):
         # write csv file
-        # with open('hand_label.csv', 'w') as file:
-        with open('hand_label.csv','a') as file:
-            writer = csv.writer(file)
-            for i in range(len(self.csvholder)):
-                writer.writerow(self.csvholder[i])
+        if firstRun:
+            # create a csv file and start writing
+            with open(self.csvFilename, 'w') as file:
+                writer = csv.writer(file)
+                for i in range(len(self.csvholder)):
+                    writer.writerow(self.csvholder[i])
+        else:
+            # append rows to the existing csv file
+            with open(self.csvFilename,'a') as file:
+                writer = csv.writer(file)
+                for i in range(len(self.csvholder)):
+                    writer.writerow(self.csvholder[i])
 
 
     def add_hand2(self, frame, roi = None):
@@ -254,11 +287,27 @@ class HandDetector:
             # for hand coor in frame to csv
             self.frameWidth = int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
             self.frameHeight = int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            print(self.frameWidth, self.frameHeight)
+            print "Original Frame Size:", (self.frameWidth, self.frameHeight)
 
-            # create a folder to hold all the frames to be saved
+            if (not self.frameWidth == self.desiredFrameWidth) and (not self.frameHeight == self.desiredFrameHeight):
+                needToResize = True
+                # initialize the ratio for resizing the frames
+                self.ratio_w = self.desiredFrameWidth / self.frameWidth
+                self.ratio_h = self.desiredFrameHeight / self.frameHeight
+
+            # create a directory holding all the frames to be saved
             if not os.path.exists(image_dir):
                 os.mkdir(image_dir)
+
+                # for first execution, add a header to the csv file
+                self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]
+            else:
+                firstRun = False
+                self.csvholder = [] # for second or later execution
+            
+            # count the number of images in the directory holding all the saved frames
+            self.img_cnt = len(os.listdir(image_dir)) + 1
+
 
             while self.capture.isOpened():
 

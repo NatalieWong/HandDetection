@@ -1,7 +1,6 @@
 *.pyc
 *.csv
-image
+hand_images
+hand_my_dataset
 resources
-hand_train
-hand_test
-image-check
+hand_my_dataset-size_err
