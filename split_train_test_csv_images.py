@@ -10,7 +10,7 @@ import shutil
 
     hand_labels.csv --> holding all the information of the images and coordinates of the hand bounding boxes in the images
 
-    hand_my_dataset/
+    hand_my_dataset/ --> to be generated in this program
         |
         |--- hand_test/
         |   |
@@ -25,6 +25,7 @@ import shutil
              --- all the images for training
 """
 
+# TODO: change the name of the directories when necessary
 curr_image_dir = "hand_images"
 
 dataset_dir = "hand_my_dataset/"
@@ -35,6 +36,7 @@ test_csv_filename = "hand_test_labels.csv"
 
 
 # split train & test csv
+# TODO: change the name of the csv file when necessary
 imgdf = pd.read_csv("hand_labels.csv")
 x = imgdf.iloc[:,:].values
 y = np.ones(imgdf.shape[0])

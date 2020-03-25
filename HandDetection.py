@@ -60,10 +60,7 @@ class HandDetector:
         self.depth_threshold = -1
 
         # for hand coor in frame to csv
-        self.image_dir = "hand_images_test"
         self.img_cnt = 0
-        self.desiredFrameWidth = 1280
-        self.desiredFrameHeight = 720
         self.frameWidth = None
         self.frameHeight = None
         self.ratio_w = None
@@ -71,6 +68,13 @@ class HandDetector:
         self.needToResize = False
 
         self.firstRun = True
+
+        # TODO: change the values when necessary
+        self.image_dir = "hand_images_test"
+        
+        self.desiredFrameWidth = 1280
+        self.desiredFrameHeight = 720
+        
         self.csvFilename = "hand_labels_test.csv"
 
         # Decrease frame size
@@ -762,6 +766,8 @@ class HandDetector:
 
 def main():
     # hand_detector = HandDetector()
+
+    # TODO: change the file name of the video source
     hand_detector = HandDetector('resources/?.mp4')
     hand_detector.debug = False
 
