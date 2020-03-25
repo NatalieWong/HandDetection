@@ -39,7 +39,7 @@ test_csv_filename = "hand_test_labels.csv"
 # TODO: change the name of the csv file when necessary
 imgdf = pd.read_csv("hand_labels.csv")
 x = imgdf.iloc[:,:].values
-y = np.ones(imgdf.shape[0])
+y = np.ones(imgdf.shape[0]) # dummy values
 
 from sklearn.model_selection import train_test_split
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=4)

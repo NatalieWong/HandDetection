@@ -40,7 +40,7 @@ Currently only one label - `hand` is supported. See the line `rowdata = [filenam
 
 ## Essential Operations
 
-### Run `python HandDetection.py` to execute the program
+### Run `python HandDetection.py`, the main program
 This program detects hand in frames from a video source using OpenCV. If a hand is detected in a frame, the frame can be saved in JPEG format under the `image` directory and the coordinates of the bounding box for the hand in the frame will be recorded. After the detection of hand in the video frames finished, a csv file `hand_label.csv` will be generated.
 
 Please change `?.mp4` in the line `hand_detector = HandDetector('resources/?.mp4')` to your video file in MP4 format. You are advised to put all the video sources under the resources directory.
