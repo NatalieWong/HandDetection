@@ -32,16 +32,16 @@ from collections import namedtuple, OrderedDict
         |   |
         |    --- all the images for training
         |
-         --- hand_test.tfrecord --> to be generated in this program
+         --- hand_eval.record --> to be generated in this program
         |
-         --- hand_train.tfrecord --> to be generated in this program
+         --- hand_train.record --> to be generated in this program
 """
 
 # TODO: change the name of the directories for generating a train/test TFRecord file
 dataset_dir = "hand_my_dataset"
 image_dir = "hand_train"
 csv_filename = "hand_train_labels.csv"
-tfrecord_filename = "hand_train.tfrecord"
+tfrecord_filename = "hand_train.record"
 
 
 # TODO: replace this with label map when necessary

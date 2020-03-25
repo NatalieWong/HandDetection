@@ -33,9 +33,9 @@ Currently only one label - `hand` is supported. See the line `rowdata = [filenam
         |   |
         |    --- all the images for training
         |
-         --- hand_test.tfrecord
+         --- hand_eval.record
         |
-         --- hand_train.tfrecord
+         --- hand_train.record
 ```
 
 ## Essential Operations
