@@ -22,20 +22,16 @@ Currently only one label - `hand` is supported. See the line `rowdata = [filenam
     hand_my_dataset/
         |
         |--- hand_test/
-        |   |
-        |    --- hand_test_labels.csv
-        |   |
-        |    --- all the images for testing
+        |   L hand_test_labels.csv
+        |   L all the images for testing
         |
-        | --- hand_train/
-        |   |
-        |    --- hand_train_labels.csv
-        |   |
-        |    --- all the images for training
+        |--- hand_train/
+        |   L hand_train_labels.csv
+        |   L all the images for training
         |
-         --- hand_eval.record
+        --- hand_eval.record
         |
-         --- hand_train.record
+        --- hand_train.record
 ```
 
 ## Essential Operations
@@ -82,3 +78,6 @@ If a hand appears to be too big in the frame, it can hardly be detected or only 
 A hand which appears to be smaller in size in each frame can be detected with a higher accuracy i.e. the bounding box can fit in the size of the hand.
 
 Avoid choosing a video in which hands appeared to be too big as well as the color of the background and the objects surrounding the hands has a similar color to skin.
+
+## Troubleshooting
+For Mac users, be aware of the `.DS_Store` file which might appear in the dataset directory i.e. `hand_my_dataset` as well as `hand_train` and `hand_test` directories. Please run `ls -la` in the terminal to check if the `.DS_Store` file exists in the mentioned directories. If any, delete the file **before generating the TFRecord files**.

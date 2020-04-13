@@ -13,16 +13,12 @@ import shutil
     hand_my_dataset/ --> to be generated in this program
         |
         |--- hand_test/
-        |   |
-        |    --- hand_test_labels.csv
-        |   |
-        |    --- all the images for testing
+        |   L hand_test_labels.csv
+        |   L all the images for testing
         |
-         --- hand_train/
-            |
-             --- hand_train_labels.csv
-            |
-             --- all the images for training
+        |--- hand_train/
+            L hand_train_labels.csv
+            L all the images for training
 """
 
 # TODO: change the name of the directories when necessary

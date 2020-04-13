@@ -1,7 +1,7 @@
 """
 Usage: To generate a train/test TFRecord file for TensorFlow hand detection model training
 
-Attention, run the program twice
+Attention, run the program twice. Once for `train.record`, and once for `test.record`
 """
 from __future__ import division
 from __future__ import print_function

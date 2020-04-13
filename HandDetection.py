@@ -70,12 +70,12 @@ class HandDetector:
         self.firstRun = True
 
         # TODO: change the values when necessary
-        self.image_dir = "hand_images_test"
+        self.image_dir = "hand_images"
         
         self.desiredFrameWidth = 1280
         self.desiredFrameHeight = 720
         
-        self.csvFilename = "hand_labels_test.csv"
+        self.csvFilename = "hand_labels.csv"
 
         # Decrease frame size
         # self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
@@ -191,17 +191,17 @@ class HandDetector:
 
             # perform normalisation, use matplotlib
             # frame = ((frame/255) * 0.5) * 2
-            # plt.imsave(os.path.join(image_dir, filename), frame)
+            # plt.imsave(os.path.join(self.image_dir, filename), frame)
 
-            if needToResize:
+            if self.needToResize:
                 # resize the frame
-                frame = cv2.resize(frame, (0,0), fx=ratio_w, fy=ratio_h)
+                frame = cv2.resize(frame, (0,0), fx=self.ratio_w, fy=self.ratio_h)
                 # frame = resized_frame # in case the above code isn't working
 
-                xmin = xmin * ratio_w
-                ymin = ymin * ratio_h
-                xmax = xmax * ratio_w
-                ymax = ymax * ratio_h
+                xmin = xmin * self.ratio_w
+                ymin = ymin * self.ratio_h
+                xmax = xmax * self.ratio_w
+                ymax = ymax * self.ratio_h
 
                 # adjust the frame size
                 final_w = frame.shape[1]
@@ -209,15 +209,15 @@ class HandDetector:
 
                 print "resized frame size:", (final_w, final_h), ", bbox:", (xmin, ymin, xmax, ymax)
 
-            cv2.imwrite(os.path.join(image_dir, filename), frame)
+            cv2.imwrite(os.path.join(self.image_dir, filename), frame)
             print "saved hand_img_"+str(self.img_cnt)
 
             # visualize hand bounding box
-            img = cv2.imread(os.path.join(image_dir, filename))
-            cv2.rectangle(img, (xmin, ymax), (xmax, ymin), (0, 255, 0), 1)
-            cv2.imshow('Verifying annotation of '+filename, img)
-            cv2.waitKey(2000)
-            cv2.destroyWindow('Verifying annotation of '+filename)
+            # img = cv2.imread(os.path.join(self.image_dir, filename))
+            # cv2.rectangle(img, (xmin, ymax), (xmax, ymin), (0, 255, 0), 1)
+            # cv2.imshow('Verifying annotation of '+filename, img)
+            # cv2.waitKey(2000)
+            # cv2.destroyWindow('Verifying annotation of '+filename)
 
             # append data for csv
             rowdata = [filename, final_w, final_h, 'hand', xmin, ymin, xmax, ymax]
@@ -230,7 +230,7 @@ class HandDetector:
 
     def generate_csv(self):
         # write csv file
-        if firstRun:
+        if self.firstRun:
             # create a csv file and start writing
             with open(self.csvFilename, 'w') as file:
                 writer = csv.writer(file)
@@ -294,23 +294,23 @@ class HandDetector:
             print "Original Frame Size:", (self.frameWidth, self.frameHeight)
 
             if (not self.frameWidth == self.desiredFrameWidth) and (not self.frameHeight == self.desiredFrameHeight):
-                needToResize = True
+                self.needToResize = True
                 # initialize the ratio for resizing the frames
                 self.ratio_w = self.desiredFrameWidth / self.frameWidth
                 self.ratio_h = self.desiredFrameHeight / self.frameHeight
 
             # create a directory holding all the frames to be saved
-            if not os.path.exists(image_dir):
-                os.mkdir(image_dir)
+            if not os.path.exists(self.image_dir):
+                os.mkdir(self.image_dir)
 
                 # for first execution, add a header to the csv file
                 self.csvholder = [['filename', 'width', 'height', 'class', 'xmin', 'ymin', 'xmax', 'ymax']]
             else:
-                firstRun = False
+                self.firstRun = False
                 self.csvholder = [] # for second or later execution
             
             # count the number of images in the directory holding all the saved frames
-            self.img_cnt = len(os.listdir(image_dir)) + 1
+            self.img_cnt = len(os.listdir(self.image_dir)) + 1
 
 
             while self.capture.isOpened():
