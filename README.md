@@ -1,6 +1,6 @@
-# Auto CSV and TFRecord files Generator for TensorFlow Object Detection model training
+# Auto Hand Dataset Generator for TensorFlow Object Detection Model training
 
-This program is specialized for automatically detecting **ONE** hand per frame from a MP4 video using OpenCV API.
+This program is specialized for automatically detecting **ONE** hand per frame in a MP4 video using OpenCV API.
 
 During the execution of the program, you have to choose whether you would like to save the frame or not by pressing one of the hotkeys. When the program terminates, a csv file will be generated. Run other consecutive programs to generate other csv files and TFRecord files which can be used for training and testing a TensorFlow hand detection model.
 
